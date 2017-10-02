@@ -1,0 +1,404 @@
+<html>
+<script>
+
+    var contains = function(needle) {
+        // Per spec, the way to identify NaN is that it is not equal to itself
+        var findNaN = needle !== needle;
+        var indexOf;
+
+        if(!findNaN && typeof Array.prototype.indexOf === 'function') {
+            indexOf = Array.prototype.indexOf;
+        } else {
+            indexOf = function(needle) {
+                var i = -1, index = -1;
+
+                for(i = 0; i < this.length; i++) {
+                    var item = this[i];
+
+                    if((findNaN && item !== item) || item === needle) {
+                        index = i;
+                        break;
+                    }
+                }
+
+                return index;
+            };
+        }
+
+        return indexOf.call(this, needle) > -1;
+    };
+</script>
+<body>
+<button id="a1">1</button>
+<button id="a4">4</button>
+<button id="a7">7</button>
+<br/>
+<button id="a2">2</button>
+<button id="a5">5</button>
+<button id="a8">8</button>
+<br/>
+<button id="a3">3</button>
+<button id="a6">6</button>
+<button id="a9">9</button>
+
+<div id="myhis" style="height: 100px;overflow: scroll;"></div>
+
+<div id="winrate" style="height: 100px;overflow: scroll;"></div>
+
+<div id="gamelearn" style="height: 500px;overflow: scroll;"></div>
+</body>
+<script>
+    var opp=[];
+    var game_state=[0,0,0,0,0,0];
+    a=localStorage["game_learning_a"];
+    b=localStorage["game_learning_b"];
+    var game_learning_a=[];
+    var game_learning_b=[];
+
+    if(typeof a!="undefined"){
+        a=JSON.parse(a);
+        for(var i in a)
+            game_learning_a[i]= a[i];
+    }
+    if(typeof b!="undefined"){
+        b=JSON.parse(b);
+        for(var i in b)
+            game_learning_b[i]= b[i];
+    }
+console.log(game_learning_a);
+
+    blue=0;red=0;
+    function playgame(){
+        set_game_plan(0);
+        make_button_null(1);
+        showbutton(0);
+        start_game();
+    }playgame();
+
+    function make_button_null(i){
+        if(i==10){return 0;}make_button_null(i+1);
+        document.getElementById("a"+i).style.backgroundColor = 'green';
+    }
+    function showbutton(i){
+        if(i==6){return 0;}showbutton(i+1);
+        var col="red";if(i>=3){col='blue';}
+        document.getElementById("a"+opp[i]).style.backgroundColor = col;
+    }
+
+    function save_state(){
+        for(i=5;i>0;i--){
+            game_state[i]=game_state[i-1];
+        }
+        game_state[0]=opp.toString();
+    }
+    /*function save_state_algorithm0(a,b){
+        a= a.toString();
+        b= b.toString();
+        game_state[0][5]=game_state[0][4];
+        game_state[0][4]=game_state[0][3];
+        game_state[0][3]=game_state[0][2];
+        game_state[0][2]=game_state[0][1];
+        game_state[0][1]=game_state[0][0];
+        game_state[1][5]=game_state[1][4];
+        game_state[1][4]=game_state[1][3];
+        game_state[1][3]=game_state[1][2];
+        game_state[1][2]=game_state[1][1];
+        game_state[1][1]=game_state[1][0];
+        game_state[0][0]=a;
+        game_state[1][0]=b;
+    }*/
+    var win=0;
+    function start_game(){
+        var myarr1=[opp[0],opp[1],opp[2]];
+        var myarr2=[opp[3],opp[4],opp[5]];
+
+        save_state();
+        //if(!check_won(myarr1)&& !check_won(myarr2))
+        {
+            setTimeout(function() {
+                if(check_won(myarr2)){
+                    alert("Wins Blue");
+                    get_learn(game_state,1);
+                    blue+=1;
+                    game_state=[[0,0,0,0,0,0],[0,0,0,0,0,0]];
+                    //location.reload();
+                }else{
+                    play_opp_one(myarr1,0);
+                }
+            },0);
+
+            setTimeout(function(){
+                if(check_won(myarr1)){
+                    alert("Wins Red");
+                    get_learn(game_state,0);
+                    red+=1;
+                    game_state=[[0,0,0,0,0,0],[0,0,0,0,0,0]];
+                    //location.reload();
+                }else{
+                    play_opp_one(myarr2,1);
+                }
+            },1000);
+            setTimeout(function(){ start_game(); }, 2000);
+        }
+    }
+
+    function get_learn(learner,i){
+        b=blue/(blue+red);r=red/(blue+red);
+        j=document.getElementById("winrate").innerHTML;
+        document.getElementById("winrate").innerHTML="Blue: "+b+" Red: "+r+"<br/>"+j;
+        j=document.getElementById("myhis").innerHTML;
+        document.getElementById("myhis").innerHTML=learner.toString()+"<br/>"+j;
+
+        if(i==0){
+            for(j=5;j>0;j--){
+                if(game_state[j]!="0,0,0,0,0,0" && game_state[j]!=0 && typeof game_state[j] != 'undefined'){
+                    if(typeof game_learning_a[game_state[j]] == 'undefined'){
+                        game_learning_a[game_state[j]]="\""+game_state[j-1]+"\"";
+                    }else{//alert(i+" "+j+" "+game_state[j]+"    "+game_learning_a);
+                        game_learning_a[game_state[j]][game_learning_a[game_state[j]].length]="\""+game_state[j-1]+"\"";
+                    }
+                }
+            }
+        }
+
+        if(i==1){
+            for(j=5;j>0;j--){
+                if(game_state[j]!="0,0,0,0,0,0" && game_state[j]!=0 && typeof game_state[j] != 'undefined'){
+                    if(typeof game_learning_b[game_state[j]] == 'undefined'){
+                        game_learning_b[game_state[j]]="\""+game_state[j-1]+"\"";
+                    }else{//alert(i+" "+j+" "+game_state[j]+"    "+game_learning_b);
+                        game_learning_b[game_state[j]][game_learning_b[game_state[j]].length]="\""+game_state[j-1]+"\"";
+                    }
+                }
+            }
+        }
+
+        a="'{";
+        for (var k in game_learning_a){
+            if (game_learning_a.hasOwnProperty(k)) {
+                a+="\""+ k + "\":\"" + game_learning_a[k]+"\",";
+            }
+        }
+        if(a.length>2){a = a.substring(0, a.length - 1);}
+        a+="}'";
+        a=a.replace(/['"]+/g, '"');
+        a = a.substring(1, a.length - 1);
+        b="'{";
+        for (var k in game_learning_b){
+            if (game_learning_b.hasOwnProperty(k)) {
+                b+="\""+ k + "\":\"" + game_learning_b[k]+"\",";
+            }
+        }
+        if(b.length>2){b = b.substring(0, b.length - 1);}
+        b+="}'";
+        b=b.replace(/['"]+/g, '"');
+        b = b.substring(1, b.length - 1);
+        a=JSON.parse(a);
+        b=JSON.parse(b);
+
+        localStorage.setItem("game_learning_a", JSON.stringify(a));
+        localStorage.setItem("game_learning_b", JSON.stringify(b));
+
+        //document.getElementById("gamelearn").innerHTML=json_table(a);
+        //document.getElementById("gamelearn").innerHTML+="<br/><br/>"+json_table(b);
+        //console.log(game_learning_a);
+        //console.log(game_learning_b);
+        game_state=[0,0,0,0,0,0];
+    }
+
+    function json_table(myObj){
+        var txt = "<table border='1' style='float: left'>"
+        for (x in myObj) {
+            txt += "<tr><td>"+x+"</td><td>" + myObj[x] + "</td></tr>";
+        }
+        txt += "</table>"
+        return txt;
+    }
+
+function play_opp_one(myarr1,i){
+    var learnss=game_learning_a;
+    if(i==1){learnss=game_learning_b;}
+    if(typeof learnss[opp.toString()] != 'undefined'){
+        opp=learnss[opp.toString()].split(",");
+        make_button_null(1);
+        showbutton(0);
+    }else{
+        play_opp_one2(myarr1);
+    }
+}
+
+    function play_opp_one2(myarr1){
+        var rand = Math.floor(Math.random() * myarr1.length);
+        var no=myarr1[rand];
+        var check=game_rule(no);//alert(check+" moved "+no);
+        if(check ==0){myarr1.splice(rand, 1);setTimeout(play_opp_one2(myarr1),5);}
+        else{
+            var index = opp.indexOf(no);
+            opp[index]=check;
+            make_button_null(1);
+            showbutton(0);
+        }
+    }
+
+    function game_rule(i){
+        var arr=[];
+        switch (i){
+            case 1:
+                arr.push(4);
+                arr.push(2);
+                arr.push(5);
+                break;
+
+            case 2:
+                arr.push(1);
+                arr.push(3);
+                arr.push(5);
+                break;
+
+            case 3:
+                arr.push(2);
+                arr.push(6);
+                arr.push(5);
+                break;
+
+            case 4:
+                arr.push(1);
+                arr.push(7);
+                arr.push(5);
+                break;
+
+            case 5:
+                arr.push(1);
+                arr.push(2);
+                arr.push(3);
+                arr.push(4);
+                arr.push(6);
+                arr.push(7);
+                arr.push(8);
+                arr.push(9);
+                break;
+
+            case 6:
+                arr.push(3);
+                arr.push(9);
+                arr.push(5);
+                break;
+
+            case 7:
+                arr.push(4);
+                arr.push(8);
+                arr.push(5);
+                break;
+
+            case 8:
+                arr.push(7);
+                arr.push(9);
+                arr.push(5);
+                break;
+
+            case 9:
+                arr.push(6);
+                arr.push(8);
+                arr.push(5);
+                break;
+        }
+        return check_valid_number(arr);
+    }
+
+    function check_valid_number(arr) {
+        j=0;
+        for(i=0;i<arr.length;i++){
+            if(!contains.call(opp, arr[i])) {
+                j+=1;
+                return arr[i];
+            }
+        }
+        if(j==0){return 0;}
+    }
+    /*function check_valid_number(arr){
+        if(typeof arr[0] == 'undefined'){return 0;}
+        var rand = Math.floor(Math.random() * (arr.length-1));
+        var rand1=rand;
+        rand=arr[rand];
+        if(contains.call(opp, rand)) {
+            arr.splice(rand1, 1);
+            check_valid_number(arr);
+        }else{
+            return rand;
+        }
+    }*/
+
+    function set_game_plan(i){
+        if(i==6){return false;}
+        var rand = Math.floor((Math.random() * 9) + 1);
+        if(!contains.call(opp, rand)){
+            opp[i]=rand;
+            setTimeout(set_game_plan(i+1),100);
+        }else{
+            setTimeout(set_game_plan(i),100);
+        }
+    }
+
+    function check_won(oppp){
+        switch(oppp[0]){
+            case 1:
+                    if(oppp[1]==5&&oppp[2]==9){return true;}
+                    if(oppp[1]==9&&oppp[2]==5){return true;}
+                break;
+            case 2:
+
+                if(oppp[1]==5&&oppp[2]==8){return true;}
+                if(oppp[1]==8&&oppp[2]==5){return true;}
+                break;
+            case 3:
+                if(oppp[1]==5&&oppp[2]==7){return true;}
+                if(oppp[1]==7&&oppp[2]==5){return true;}
+                break;
+            case 4:
+                if(oppp[1]==5&&oppp[2]==6){return true;}
+                if(oppp[1]==6&&oppp[2]==5){return true;}
+                break;
+            case 5:
+                    if(oppp[1]==6 && oppp[2]==4){return true;}
+                    if(oppp[1]==4 && oppp[2]==6){return true;}
+                    if(oppp[1]==3 && oppp[2]==7){return true;}
+                    if(oppp[1]==7 && oppp[2]==3){return true;}
+                    if(oppp[1]==8 && oppp[2]==2){return true;}
+                    if(oppp[1]==2 && oppp[2]==8){return true;}
+                    if(oppp[1]==9 && oppp[2]==1){return true;}
+                    if(oppp[1]==1 && oppp[2]==9){return true;}
+                break;
+            case 6:
+                if(oppp[1]==5&&oppp[2]==4){return true;}
+                if(oppp[1]==4&&oppp[2]==5){return true;}
+                break;
+            case 7:
+                if(oppp[1]==5&&oppp[2]==3){return true;}
+                if(oppp[1]==3&&oppp[2]==5){return true;}
+                break;
+            case 8:
+                if(oppp[1]==5&&oppp[2]==2){return true;}
+                if(oppp[1]==2&&oppp[2]==5){return true;}
+                break;
+            case 9:
+                if(oppp[1]==5&&oppp[2]==1){return true;}
+                if(oppp[1]==1&&oppp[2]==5){return true;}
+                break;
+        }
+        return false;
+    }
+
+
+
+
+
+
+</script>
+<style>
+    button {
+        width: 100px;
+        height: 100px;
+        font-size: 40px;
+    }
+</style>
+</html>
